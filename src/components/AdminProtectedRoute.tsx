@@ -27,25 +27,21 @@ export default function AdminProtectedRoute({
           const isAdminUser = await adminApi.isCurrentUserAdmin();
           
           if (!isAdminUser) {
-            console.log('❌ Usuário não é administrador');
             router.push('/'); // Redirecionar para home se não for admin
             return;
           }
           
-          console.log('✅ Usuário é administrador');
           setIsAdmin(true);
         } catch (error) {
           console.error('Erro ao verificar status de admin:', error);
           // Se for erro de token, redirecionar para login
           if (error instanceof Error && error.message.includes('token')) {
-            console.log('🔑 Erro de token, redirecionando para login');
             router.push('/login');
           } else {
             router.push('/');
           }
         }
       } else if (!isLoading && !isAuthenticated) {
-        console.log('❌ Usuário não autenticado, redirecionando para login');
         router.push(redirectTo);
       }
       
