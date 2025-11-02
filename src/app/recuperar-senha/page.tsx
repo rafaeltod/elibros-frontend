@@ -31,7 +31,6 @@ export default function RecuperarSenhaPage() {
 
     try {
       // TODO: Implementar chamada para API de recuperação de senha
-      console.log('Recovery email:', email);
       // Simular delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       

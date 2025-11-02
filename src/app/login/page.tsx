@@ -53,15 +53,12 @@ export default function LoginPage() {
         const { adminApi } = await import('@/services/adminApiService');
         const isAdmin = await adminApi.isCurrentUserAdmin();
         
-        if (isAdmin) {
-          console.log('🔑 Admin detectado, redirecionando para /admin');
+        if (isAdmin) {       
           router.push('/admin');
         } else {
-          console.log('👤 Usuário comum, redirecionando para /');
           router.push('/');
         }
       } catch (adminCheckError) {
-        console.log('⚠️ Erro ao verificar admin, redirecionando para página inicial:', adminCheckError);
         router.push('/');
       }
     } catch (error) {

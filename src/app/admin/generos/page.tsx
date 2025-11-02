@@ -216,15 +216,6 @@ export default function GenerosAdminPage() {
     })
     .map(result => result.genero);
 
-    console.log('🔍 Busca por gêneros realizada:', {
-      termo: searchTerm,
-      resultados: searchResults.length,
-      primeiros3: searchResults.slice(0, 3).map(g => ({
-        nome: g.nome,
-        id: g.id
-      }))
-    });
-
     return searchResults;
   }, [generos, searchTerm, sortOrder]);
 

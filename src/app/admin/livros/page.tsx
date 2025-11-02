@@ -103,11 +103,7 @@ function LivroModal({ isOpen, onClose, livro, onSuccess }: LivroModalProps) {
     // Ordenar cada grupo alfabeticamente
     selecionados.sort((a, b) => a.nome.localeCompare(b.nome));
     naoSelecionados.sort((a, b) => a.nome.localeCompare(b.nome));
-    
-    // DEBUG: Log da ordenação
-    console.log('🔄 Autores - Selecionados:', selecionados.map(a => a.nome));
-    console.log('🔄 Autores - Não selecionados:', naoSelecionados.map(a => a.nome));
-    
+     
     // Retornar selecionados primeiro, depois não selecionados
     return [...selecionados, ...naoSelecionados];
   }, [autores, searchAutor, formData.autor]);
@@ -220,7 +216,7 @@ function LivroModal({ isOpen, onClose, livro, onSuccess }: LivroModalProps) {
       setNewAutorName('');
       setCreateAutorModal(false);
       
-      console.log('✅ Autor criado e lista atualizada:', novoAutor);
+      
     } catch (error) {
       console.error('Erro ao criar autor:', error);
       setError('Erro ao criar autor. Tente novamente.');
@@ -244,7 +240,7 @@ function LivroModal({ isOpen, onClose, livro, onSuccess }: LivroModalProps) {
       setNewCategoriaNome('');
       setCreateCategoriaModal(false);
       
-      console.log('✅ Categoria criada e lista atualizada:', novaCategoria);
+      
     } catch (error) {
       console.error('Erro ao criar categoria:', error);
       setError('Erro ao criar categoria. Tente novamente.');
@@ -268,7 +264,7 @@ function LivroModal({ isOpen, onClose, livro, onSuccess }: LivroModalProps) {
       setNewGeneroName('');
       setCreateGeneroModal(false);
       
-      console.log('✅ Gênero criado e lista atualizada:', novoGenero);
+      
     } catch (error) {
       console.error('Erro ao criar gênero:', error);
       setError('Erro ao criar gênero. Tente novamente.');
@@ -309,12 +305,11 @@ function LivroModal({ isOpen, onClose, livro, onSuccess }: LivroModalProps) {
   useEffect(() => {
     if (livro && isOpen) {
       setIsLoadingData(true);
-      console.log('🔄 Populando formulário com dados do livro:', livro);
+
       
       const formatDateForInput = (dateString: string) => {
         if (!dateString || dateString === 'N/A') return '';
         
-        console.log('📅 Formatando data:', dateString);
         
         // Se a data já está no formato YYYY-MM-DD, retorna como está
         if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) return dateString;
@@ -361,8 +356,6 @@ function LivroModal({ isOpen, onClose, livro, onSuccess }: LivroModalProps) {
 
       setIsLoadingData(false);
     } else if (!livro && isOpen) {
-      // Se for adicionar novo livro, reseta o form
-      console.log('🆕 Resetando formulário para novo livro');
       setFormData({
         titulo: '',
         subtitulo: '',
@@ -432,7 +425,6 @@ function LivroModal({ isOpen, onClose, livro, onSuccess }: LivroModalProps) {
       // Adicionar arquivo de capa
       formDataToSend.append('capa', capaFile);
 
-      console.log('📤 Enviando com FormData (arquivo)');
       
       if (livro) {
         await livroApi.updateWithFile(livro.id, formDataToSend);
@@ -457,7 +449,6 @@ function LivroModal({ isOpen, onClose, livro, onSuccess }: LivroModalProps) {
         genero: formData.genero,
       };
 
-      console.log('📤 Enviando com JSON (sem arquivo):', dataToSend);
 
       if (livro) {
         await livroApi.update(livro.id, dataToSend);
