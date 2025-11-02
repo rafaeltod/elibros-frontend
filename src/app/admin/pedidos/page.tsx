@@ -26,7 +26,6 @@ function PedidoModal({ isOpen, onClose, pedido, onSuccess, onUpdateStatus, mode 
   // Detectar se a API está usando códigos ou formato por extenso
   const isUsingCodes = pedido?.status && ['PRO', 'CON', 'ENV', 'ENT', 'CAN'].includes(pedido.status);
   
-  console.log('🔍 Modal - Status do pedido:', pedido?.status, 'Usando códigos:', isUsingCodes);
   
   // Opções de status baseadas no formato detectado
   const statusOptions = isUsingCodes ? [
@@ -43,7 +42,6 @@ function PedidoModal({ isOpen, onClose, pedido, onSuccess, onUpdateStatus, mode 
     { value: 'cancelado', label: 'Cancelado' }
   ];
   
-  console.log('📋 Opções de status disponíveis:', statusOptions);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -391,16 +389,6 @@ export default function PedidosAdminPage() {
       }
     })
     .map(result => result.pedido);
-
-    console.log('� Busca realizada:', {
-      termo: searchTerm,
-      termoLimpo: cleanSearchTerm,
-      resultados: searchResults.length,
-      primeiros3: searchResults.slice(0, 3).map(p => ({
-        numero: p.numero_pedido,
-        data: p.data_pedido
-      }))
-    });
 
     return searchResults;
   }, [pedidos, searchTerm, filterStatus, sortOrder, apiSearchTerm]);

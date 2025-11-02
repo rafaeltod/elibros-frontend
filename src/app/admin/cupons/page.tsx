@@ -28,8 +28,7 @@ function CupomModal({ isOpen, onClose, cupom, onSuccess }: CupomModalProps) {
 
   // useEffect para atualizar formData quando cupom mudar
   useEffect(() => {
-    console.log('🔍 CupomModal - Cupom recebido:', cupom);
-    
+   
     if (cupom) {
       const newFormData = {
         codigo: cupom.codigo || '',
@@ -40,11 +39,11 @@ function CupomModal({ isOpen, onClose, cupom, onSuccess }: CupomModalProps) {
         data_fim: cupom.data_fim ? cupom.data_fim.split('T')[0] : '',
       };
       
-      console.log('📝 Atualizando formData com:', newFormData);
+
       setFormData(newFormData);
     } else {
       // Se não há cupom (novo cupom), reseta o formulário
-      console.log('🆕 Resetando formulário para novo cupom');
+
       setFormData({
         codigo: '',
         valor: 0,
@@ -259,11 +258,7 @@ export default function CuponsAdminPage() {
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; cupom?: Cupom }>({ isOpen: false });
 
   // DEBUG: Ver os parâmetros sendo passados para o hook
-  console.log('🔍 Parâmetros do filtro:', {
-    search: searchTerm,
-    ativo: filterAtivo,
-    ordering: sortOrder
-  });
+  
 
   const { 
     cupons, 
@@ -280,7 +275,7 @@ export default function CuponsAdminPage() {
 
   const filteredCupons = useMemo(() => {
     // DEBUG: Ver cupons recebidos da API
-    console.log('📦 Cupons recebidos da API:', cupons.length);
+    
     console.log('📋 Status dos cupons:', cupons.map(c => ({ codigo: c.codigo, ativo: c.ativo })));
     
     // O filtro de status já é aplicado no hook useCupons através do parâmetro 'ativo'
@@ -340,7 +335,6 @@ export default function CuponsAdminPage() {
   };
 
   const handleEditCupom = (cupom: Cupom) => {
-    console.log('✏️ Editando cupom:', cupom);
     setEditingCupom(cupom);
     setIsModalOpen(true);
   };
@@ -421,7 +415,7 @@ export default function CuponsAdminPage() {
                   value={filterAtivo === undefined ? 'all' : filterAtivo ? 'true' : 'false'}
                   onChange={(e) => {
                     const value = e.target.value;
-                    console.log('🔍 Valor selecionado no filtro:', value);
+                   
                     
                     if (value === 'all') {
                       setFilterAtivo(undefined);
