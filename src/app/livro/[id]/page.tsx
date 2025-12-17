@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { Header, Footer, BooksCarousel } from '@/components';
-import { livroApi, avaliacaoApi } from '@/services';
-import { Livro, Avaliacao } from '@/types';
+import { livroApi, avaliacaoApi, freteApi } from '@/services';
+import { Livro, Avaliacao, ResultadoFrete } from '@/types';
 import { useCart } from '../../../contexts/CartContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getImageProps } from '../../../utils/imageUtils';
@@ -24,6 +24,12 @@ export default function LivroPage() {
   const [comentario, setComentario] = useState('');
   const [enviandoComentario, setEnviandoComentario] = useState(false);
   const maxCaracteres = 1000;
+
+  // Estados para cálculo de frete
+  const [cep, setCep] = useState('');
+  const [calculandoFrete, setCalculandoFrete] = useState(false);
+  const [resultadoFrete, setResultadoFrete] = useState<ResultadoFrete | null>(null);
+  const [erroFrete, setErroFrete] = useState<string | null>(null);
 
   const livroId = typeof params.id === 'string' ? parseInt(params.id, 10) : null;
 
@@ -131,6 +137,51 @@ export default function LivroPage() {
   const formatPreco = (preco: string) => {
     const [reais, centavos] = preco.split('.');
     return { reais, centavos: centavos || '00' };
+  };
+
+  // Formata o CEP com máscara
+  const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 8) value = value.slice(0, 8);
+    if (value.length > 5) {
+      value = value.slice(0, 5) + '-' + value.slice(5);
+    }
+    setCep(value);
+    // Limpar resultado anterior quando mudar o CEP
+    if (resultadoFrete) {
+      setResultadoFrete(null);
+      setErroFrete(null);
+    }
+  };
+
+  // Calcula o frete
+  const handleCalcularFrete = async () => {
+    const cepLimpo = cep.replace(/\D/g, '');
+    
+    if (!freteApi.validarCep(cepLimpo)) {
+      setErroFrete('Digite um CEP válido com 8 dígitos');
+      return;
+    }
+
+    if (!livroId) return;
+
+    try {
+      setCalculandoFrete(true);
+      setErroFrete(null);
+      
+      const resultado = await freteApi.calcularFreteLivro(livroId, {
+        cep_destino: cepLimpo,
+        quantidade: quantity,
+      });
+      
+      setResultadoFrete(resultado);
+    } catch (err) {
+      console.error('Erro ao calcular frete:', err);
+      setErroFrete(err instanceof Error ? err.message : 'Erro ao calcular frete');
+      setResultadoFrete(null);
+    } finally {
+      setCalculandoFrete(false);
+    }
   };
 
   const handleQuantityChange = (delta: number) => {
@@ -293,25 +344,60 @@ export default function LivroPage() {
 
               {/* Opções de frete */}
               <div className="mb-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-[#5391AB] font-medium">eLibros econômico:</p>
-                    <p className="text-xs text-gray-600">Chega entre XX - XX de Mês</p>
-                  </div>
-                  <span className="bg-[#3B362B] text-white text-xs px-2 py-1 rounded">
-                    R$ XX,XX
-                  </span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-[#FFB800] font-medium">eLibros Express:</p>
-                    <p className="text-xs text-gray-600">Chega entre XX - XX de Mês</p>
-                  </div>
-                  <span className="bg-[#FFB800] text-white text-xs px-2 py-1 rounded">
-                    R$ XX,XX
-                  </span>
-                </div>
+                {resultadoFrete ? (
+                  // Exibe as opções de frete calculadas
+                  resultadoFrete.opcoes.map((opcao) => {
+                    const corFundo = opcao.tipo === 'expresso' ? '#FFB800' : opcao.tipo === 'padrao' ? '#5391AB' : '#3B362B';
+                    const corTexto = opcao.tipo === 'expresso' ? '#FFB800' : opcao.tipo === 'padrao' ? '#5391AB' : '#3B362B';
+                    return (
+                      <div key={opcao.tipo} className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium" style={{ color: corTexto }}>
+                            {opcao.nome}:
+                          </p>
+                          <p className="text-xs text-gray-600">{opcao.prazo_texto}</p>
+                        </div>
+                        <span 
+                          className="text-white text-xs px-2 py-1 rounded"
+                          style={{ backgroundColor: corFundo }}
+                        >
+                          {opcao.gratis ? 'GRÁTIS' : opcao.preco_formatado}
+                        </span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  // Placeholder quando não há frete calculado
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-[#3B362B] font-medium">eLibros Econômico:</p>
+                        <p className="text-xs text-gray-600">Digite seu CEP para calcular</p>
+                      </div>
+                      <span className="bg-[#3B362B] text-white text-xs px-2 py-1 rounded">
+                        --
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-[#5391AB] font-medium">eLibros Padrão:</p>
+                        <p className="text-xs text-gray-600">Digite seu CEP para calcular</p>
+                      </div>
+                      <span className="bg-[#5391AB] text-white text-xs px-2 py-1 rounded">
+                        --
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-[#FFB800] font-medium">eLibros Express:</p>
+                        <p className="text-xs text-gray-600">Digite seu CEP para calcular</p>
+                      </div>
+                      <span className="bg-[#FFB800] text-white text-xs px-2 py-1 rounded">
+                        --
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Local de entrega */}
@@ -388,20 +474,49 @@ export default function LivroPage() {
               <div className="mb-4">
                 <input
                   type="text"
+                  value={cep}
+                  onChange={handleCepChange}
                   placeholder="Digite o seu CEP"
+                  maxLength={9}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FFD147] focus:border-transparent"
+                  onKeyDown={(e) => e.key === 'Enter' && handleCalcularFrete()}
                 />
+                {erroFrete && (
+                  <p className="text-xs text-red-500 mt-1">{erroFrete}</p>
+                )}
+                {resultadoFrete && (
+                  <p className="text-xs text-green-600 mt-1">
+                    CEP: {freteApi.formatarCep(resultadoFrete.cep_destino)} - {resultadoFrete.regiao}
+                  </p>
+                )}
               </div>
 
               {/* Calcular frete */}
-              <button className="w-3/4 mx-auto flex items-center justify-center gap-2 bg-[#3B362B] hover:bg-[#2a241f] text-white rounded-lg px-3 py-2 transition-colors font-medium text-sm">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="1" y="3" width="15" height="13"/>
-                  <polygon points="16,6 20,6 23,11 23,18 20,18 20,15 16,15"/>
-                  <circle cx="5.5" cy="18.5" r="2.5"/>
-                  <circle cx="18.5" cy="18.5" r="2.5"/>
-                </svg>
-                Calcular frete
+              <button 
+                onClick={handleCalcularFrete}
+                disabled={calculandoFrete || !cep}
+                className={`w-3/4 mx-auto flex items-center justify-center gap-2 rounded-lg px-3 py-2 transition-colors font-medium text-sm ${
+                  calculandoFrete || !cep
+                    ? 'bg-gray-400 cursor-not-allowed text-gray-200'
+                    : 'bg-[#3B362B] hover:bg-[#2a241f] text-white'
+                }`}
+              >
+                {calculandoFrete ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Calculando...
+                  </>
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="1" y="3" width="15" height="13"/>
+                      <polygon points="16,6 20,6 23,11 23,18 20,18 20,15 16,15"/>
+                      <circle cx="5.5" cy="18.5" r="2.5"/>
+                      <circle cx="18.5" cy="18.5" r="2.5"/>
+                    </svg>
+                    Calcular frete
+                  </>
+                )}
               </button>
             </div>
           </div>

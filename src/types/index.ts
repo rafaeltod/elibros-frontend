@@ -4,6 +4,7 @@ export type { Carrinho } from './carrinho';
 export type { Cliente, ClienteUpdateData, ClienteListResponse, ClienteStats } from './cliente';
 export type { Cupom, CupomCreateData, CupomUpdateData, CupomListResponse, CupomStats } from './cupom';
 export type { Endereco } from './endereco';
+export type { OpcaoFrete, ResultadoFrete, CalcularFreteGenericoRequest, CalcularFreteLivroRequest, CalcularFreteCarrinhoRequest } from './frete';
 export type { ItemCarrinho } from './itemCarrinho';
 export type { Livro, LivroCreateData, LivroUpdateData, LivroListResponse } from './livro';
 export type { Autor } from './autor';
