@@ -435,7 +435,7 @@ export default function CarrinhoPage() {
                 <button
                   className="px-6 py-3 bg-[#FFD147] hover:bg-[#fac423] rounded text-lg transition-colors"
                   type="button"
-                  onClick={() => router.push('/confirmar')}
+                  onClick={() => router.push('/carrinho/Confirmar')}
                 >
                   Finalizar compra
                 </button>

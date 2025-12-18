@@ -50,15 +50,11 @@ export interface Pedido {
 }
 
 export interface PedidoCreateData {
-  cliente_id: number;
-  endereco_entrega_id: number;
-  metodo_pagamento: string;
-  observacoes?: string;
-  cupom_codigo?: string;
-  itens: Array<{
-    livro_id: number;
-    quantidade: number;
-  }>;
+  data_de_pedido: string;  // ISO datetime string (toISOString())
+  entrega_estimada: string;  // ISO datetime string (toISOString())
+  valor_total?: string;  // Decimal como string
+  desconto?: string;  // Decimal como string
+  quantia_itens?: number;
 }
 
 export interface PedidoUpdateData {
@@ -140,6 +136,7 @@ class PedidoApiService {
   }
 
   async create(data: PedidoCreateData): Promise<Pedido> {
+    console.log('🔄 Enviando pedido para API:', JSON.stringify(data, null, 2));
     return elibrosApi.makeRequest<Pedido>(`${this.endpoint}/`, {
       method: 'POST',
       body: JSON.stringify(data),

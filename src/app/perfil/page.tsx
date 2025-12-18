@@ -29,6 +29,29 @@ export default function PerfilPage() {
   // Estados para perfil
   const [modalPerfilAberto, setModalPerfilAberto] = useState(false);
   const [fotoPerfil, setFotoPerfil] = useState<string | undefined>(user?.foto_de_perfil);
+  const [dadosPerfil, setDadosPerfil] = useState({
+    nome: user?.nome || '',
+    email: user?.email || '',
+    telefone: user?.telefone || '',
+    cpf: user?.CPF || '',
+    genero: user?.genero || 'NI',
+    dataNascimento: user?.dt_nasc || ''
+  });
+
+  // Atualizar dados quando user mudar
+  useEffect(() => {
+    if (user) {
+      setFotoPerfil(user.foto_de_perfil);
+      setDadosPerfil({
+        nome: user.nome || '',
+        email: user.email || '',
+        telefone: user.telefone || '',
+        cpf: user.CPF || '',
+        genero: user.genero || 'NI',
+        dataNascimento: user.dt_nasc || ''
+      });
+    }
+  }, [user]);
 
   // Carregar endereço do perfil
   useEffect(() => {
@@ -63,13 +86,34 @@ export default function PerfilPage() {
   };
 
   // Salvar perfil
-  const handleSalvarPerfil = async ({ nome, genero, foto }: { nome: string; genero: string; foto?: File | null }) => {
+  const handleSalvarPerfil = async ({ nome, genero, foto, email, telefone, cpf, dataNascimento }: { 
+    nome: string; 
+    genero: string; 
+    foto?: File | null;
+    email?: string;
+    telefone?: string;
+    cpf?: string;
+    dataNascimento?: string;
+  }) => {
     const formData = new FormData();
     formData.append('user.nome', nome);
     formData.append('user.genero', genero);
+    if (email) formData.append('user.email', email);
+    if (telefone) formData.append('user.telefone', telefone);
+    if (cpf) formData.append('user.CPF', cpf);
+    if (dataNascimento) formData.append('user.dt_nasc', dataNascimento);
     if (foto) formData.append('foto_de_perfil', foto);
-    const updated = await clienteApi.updatePerfil(formData as any); // updatePerfil aceita FormData
+    
+    const updated = await clienteApi.updatePerfil(formData as any);
     setFotoPerfil(updated.foto_de_perfil ?? undefined);
+    setDadosPerfil({
+      nome: updated.nome || nome,
+      email: updated.email || email || '',
+      telefone: updated.telefone || telefone || '',
+      cpf: updated.cpf || cpf || '',
+      genero: updated.genero || genero,
+      dataNascimento: updated.data_nascimento || dataNascimento || ''
+    });
   };
 
   const handleLogout = async () => {
@@ -254,9 +298,13 @@ export default function PerfilPage() {
           isOpen={modalPerfilAberto}
           onClose={() => setModalPerfilAberto(false)}
           onSave={handleSalvarPerfil}
-          nomeAtual={user?.nome || ''}
-          generoAtual={user?.genero || 'NI'}
+          nomeAtual={dadosPerfil.nome}
+          generoAtual={dadosPerfil.genero}
           fotoAtual={fotoPerfil || user?.foto_de_perfil || ''}
+          emailAtual={dadosPerfil.email}
+          telefoneAtual={dadosPerfil.telefone}
+          cpfAtual={dadosPerfil.cpf}
+          dataNascimentoAtual={dadosPerfil.dataNascimento}
         />
       </div>
     </ProtectedRoute>
