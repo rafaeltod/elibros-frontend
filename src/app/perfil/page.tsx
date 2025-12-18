@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Header, Footer, ProtectedRoute, EnderecoModal } from '@/components';
+import { Header, Footer, ProtectedRoute, EnderecoModal, PerfilModal } from '@/components';
 import { useAuth } from '@/contexts/AuthContext';
 import { clienteApi } from '@/services';
 import { freteApi } from '@/services/freteApiService';
@@ -25,6 +25,10 @@ export default function PerfilPage() {
   const [endereco, setEndereco] = useState<EnderecoData | null>(null);
   const [carregandoEndereco, setCarregandoEndereco] = useState(true);
   const [modalEnderecoAberto, setModalEnderecoAberto] = useState(false);
+
+  // Estados para perfil
+  const [modalPerfilAberto, setModalPerfilAberto] = useState(false);
+  const [fotoPerfil, setFotoPerfil] = useState<string | undefined>(user?.foto_de_perfil);
 
   // Carregar endereço do perfil
   useEffect(() => {
@@ -58,6 +62,16 @@ export default function PerfilPage() {
     }
   };
 
+  // Salvar perfil
+  const handleSalvarPerfil = async ({ nome, genero, foto }: { nome: string; genero: string; foto?: File | null }) => {
+    const formData = new FormData();
+    formData.append('user.nome', nome);
+    formData.append('user.genero', genero);
+    if (foto) formData.append('foto_de_perfil', foto);
+    const updated = await clienteApi.updatePerfil(formData as any); // updatePerfil aceita FormData
+    setFotoPerfil(updated.foto_de_perfil ?? undefined);
+  };
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -81,9 +95,9 @@ export default function PerfilPage() {
           <form className="bg-[#EBEBE1] mx-16 my-16 px-16 py-16 rounded-sm flex flex-col gap-16">
             {/* Primeira seção */}
             <div className="flex gap-16">
-              <figure className="w-[18%] m-0">
+              <figure className="w-[18%] m-0 flex flex-col items-center gap-2">
                 <Image 
-                  src="/usuario.png" 
+                  src={fotoPerfil || user?.foto_de_perfil || "/usuario.png"} 
                   alt="Profile Picture"
                   width={200}
                   height={200}
@@ -143,13 +157,14 @@ export default function PerfilPage() {
                 >
                   Visualizar pedidos
                 </a>
-                <a 
-                  id="editar-perfil" 
-                  href="/editar-perfil"
+                <button
+                  type="button"
+                  id="editar-perfil"
                   className="w-full bg-[#D9D9D9] text-center py-2 rounded-sm text-[#3B362B] text-lg font-light no-underline"
+                  onClick={() => setModalPerfilAberto(true)}
                 >
                   Editar perfil de usuário
-                </a>
+                </button>
               </div>
             </div>
 
@@ -197,6 +212,7 @@ export default function PerfilPage() {
                         {endereco.complemento && ` - ${endereco.complemento}`}, {endereco.bairro}, {endereco.cidade}/{endereco.uf} - CEP: {freteApi.formatarCep(endereco.cep)}
                       </p>
                       <button 
+                        type="button"
                         onClick={() => setModalEnderecoAberto(true)}
                         className="text-[#5391AB] hover:underline text-sm"
                       >
@@ -205,6 +221,7 @@ export default function PerfilPage() {
                     </div>
                   ) : (
                     <button 
+                      type="button"
                       onClick={() => setModalEnderecoAberto(true)}
                       className="text-[#5391AB] hover:underline text-lg font-light text-left"
                     >
@@ -230,6 +247,16 @@ export default function PerfilPage() {
           onSave={handleSalvarEndereco}
           enderecoAtual={endereco}
           title={endereco ? "Editar Endereço" : "Cadastrar Endereço"}
+        />
+
+        {/* Modal de Perfil */}
+        <PerfilModal
+          isOpen={modalPerfilAberto}
+          onClose={() => setModalPerfilAberto(false)}
+          onSave={handleSalvarPerfil}
+          nomeAtual={user?.nome || ''}
+          generoAtual={user?.genero || 'NI'}
+          fotoAtual={fotoPerfil || user?.foto_de_perfil || ''}
         />
       </div>
     </ProtectedRoute>

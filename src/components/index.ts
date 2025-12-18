@@ -5,3 +5,4 @@ export { default as BooksCarousel } from './BooksCarousel';
 export { default as ClientOnly } from './ClientOnly';
 export { default as ProtectedRoute } from './ProtectedRoute';
 export { default as EnderecoModal } from './EnderecoModal';
+export { default as PerfilModal } from './PerfilModal';

@@ -3,7 +3,7 @@
 export interface OpcaoFrete {
   tipo: string;
   nome: string;
-  preco: number;
+  preco: number | string;
   preco_formatado: string;
   prazo_dias: number;
   prazo_texto: string;
@@ -20,16 +20,16 @@ export interface ResultadoFrete {
 }
 
 export interface CalcularFreteGenericoRequest {
-  cep_destino: string;
+  cep: string;
   quantidade_livros: number;
   valor_total?: number;
 }
 
 export interface CalcularFreteLivroRequest {
-  cep_destino: string;
+  cep: string;
   quantidade?: number;
 }
 
 export interface CalcularFreteCarrinhoRequest {
-  cep_destino: string;
+  cep: string;
 }

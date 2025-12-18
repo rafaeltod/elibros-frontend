@@ -230,7 +230,7 @@ export default function CarrinhoPage() {
       setErroFrete(null);
       
       const resultado = await freteApi.calcularFreteCarrinho({
-        cep_destino: cepLimpo,
+        cep: cepLimpo,
       });
       
       setResultadoFrete(resultado);
@@ -251,10 +251,13 @@ export default function CarrinhoPage() {
   };
 
   // Obtém o valor do frete escolhido
-  const getFreteEscolhidoValor = () => {
+  const getFreteEscolhidoValor = (): number => {
     if (!resultadoFrete || !freteEscolhido) return 0;
     const opcao = resultadoFrete.opcoes.find(o => o.tipo === freteEscolhido);
-    return opcao ? (opcao.gratis ? 0 : opcao.preco) : 0;
+    if (!opcao || opcao.gratis) return 0;
+    // Garantir que o valor seja um número
+    const preco = typeof opcao.preco === 'string' ? parseFloat(opcao.preco) : opcao.preco;
+    return isNaN(preco) ? 0 : preco;
   };
 
   // Total com frete
@@ -520,7 +523,7 @@ export default function CarrinhoPage() {
                               className="text-white text-sm px-3 py-1 rounded font-medium"
                               style={{ backgroundColor: corBorda }}
                             >
-                              {opcao.gratis ? 'GRÁTIS' : opcao.preco_formatado}
+                              {opcao.gratis ? 'GRÁTIS' : (opcao.preco_formatado || `R$ ${(typeof opcao.preco === 'string' ? parseFloat(opcao.preco) : opcao.preco).toFixed(2).replace('.', ',')}`)}
                             </span>
                           </label>
                         );

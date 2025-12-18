@@ -238,7 +238,7 @@ export default function LivroPage() {
       setErroFrete(null);
       
       const resultado = await freteApi.calcularFreteLivro(livroId, {
-        cep_destino: cepLimpo,
+        cep: cepLimpo,
         quantidade: quantity,
       });
       
@@ -429,7 +429,7 @@ export default function LivroPage() {
                           className="text-white text-xs px-2 py-1 rounded"
                           style={{ backgroundColor: corFundo }}
                         >
-                          {opcao.gratis ? 'GRÁTIS' : opcao.preco_formatado}
+                          {opcao.gratis ? 'GRÁTIS' : (opcao.preco_formatado || `R$ ${(typeof opcao.preco === 'string' ? parseFloat(opcao.preco) : opcao.preco).toFixed(2).replace('.', ',')}`)}
                         </span>
                       </div>
                     );
