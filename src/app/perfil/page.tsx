@@ -1,11 +1,62 @@
 "use client";
 
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Header, Footer, ProtectedRoute } from '@/components';
+import { Header, Footer, ProtectedRoute, EnderecoModal } from '@/components';
 import { useAuth } from '@/contexts/AuthContext';
+import { clienteApi } from '@/services';
+import { freteApi } from '@/services/freteApiService';
+
+interface EnderecoData {
+  id?: number;
+  cep: string;
+  rua: string;
+  numero: string;
+  complemento?: string;
+  bairro: string;
+  cidade: string;
+  uf: string;
+}
 
 export default function PerfilPage() {
   const { user, logout } = useAuth();
+  
+  // Estados para endereço
+  const [endereco, setEndereco] = useState<EnderecoData | null>(null);
+  const [carregandoEndereco, setCarregandoEndereco] = useState(true);
+  const [modalEnderecoAberto, setModalEnderecoAberto] = useState(false);
+
+  // Carregar endereço do perfil
+  useEffect(() => {
+    const carregarEndereco = async () => {
+      try {
+        setCarregandoEndereco(true);
+        const perfil = await clienteApi.getPerfil();
+        if (perfil.endereco) {
+          setEndereco(perfil.endereco);
+        }
+      } catch (err) {
+        console.error('Erro ao carregar endereço:', err);
+      } finally {
+        setCarregandoEndereco(false);
+      }
+    };
+
+    carregarEndereco();
+  }, []);
+
+  // Salvar endereço
+  const handleSalvarEndereco = async (novoEndereco: EnderecoData) => {
+    try {
+      await clienteApi.updatePerfil({
+        endereco: novoEndereco
+      });
+      setEndereco(novoEndereco);
+    } catch (err) {
+      console.error('Erro ao salvar endereço:', err);
+      throw err;
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -137,7 +188,29 @@ export default function PerfilPage() {
                 </div>
                 <div className="flex flex-col mb-4">
                   <h4 className="font-light mb-1 text-black/50 text-lg">Endereço</h4>
-                  <a href="#" className="text-[#3B362B] text-lg font-light no-underline">Cadastrar endereço</a>
+                  {carregandoEndereco ? (
+                    <p className="text-[#3B362B] text-lg font-light">Carregando...</p>
+                  ) : endereco ? (
+                    <div className="flex items-center gap-3">
+                      <p className="text-[#3B362B] text-lg font-light">
+                        {endereco.rua}, {endereco.numero}
+                        {endereco.complemento && ` - ${endereco.complemento}`}, {endereco.bairro}, {endereco.cidade}/{endereco.uf} - CEP: {freteApi.formatarCep(endereco.cep)}
+                      </p>
+                      <button 
+                        onClick={() => setModalEnderecoAberto(true)}
+                        className="text-[#5391AB] hover:underline text-sm"
+                      >
+                        Editar
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => setModalEnderecoAberto(true)}
+                      className="text-[#5391AB] hover:underline text-lg font-light text-left"
+                    >
+                      Cadastrar endereço
+                    </button>
+                  )}
                 </div>
                 <div className="flex flex-col">
                   <h4 className="font-light mb-1 text-black/50 text-lg">CPF</h4>
@@ -149,6 +222,15 @@ export default function PerfilPage() {
         </main>
 
         <Footer />
+
+        {/* Modal de Endereço */}
+        <EnderecoModal
+          isOpen={modalEnderecoAberto}
+          onClose={() => setModalEnderecoAberto(false)}
+          onSave={handleSalvarEndereco}
+          enderecoAtual={endereco}
+          title={endereco ? "Editar Endereço" : "Cadastrar Endereço"}
+        />
       </div>
     </ProtectedRoute>
   );

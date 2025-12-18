@@ -4,4 +4,5 @@ export { avaliacaoApi } from './avaliacaoApiService';
 export { clienteApi } from './clienteApiService';
 export { cupomApi } from './cupomApiService';
 export { elibrosApi } from './api';
+export { freteApi } from './freteApiService';
 export { livroApi } from './livroApiService';

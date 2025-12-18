@@ -7,6 +7,8 @@ import { Header, Footer } from '../../components';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getImageProps } from '../../utils/imageUtils';
+import { freteApi } from '../../services';
+import { ResultadoFrete } from '../../types';
 
 export default function CarrinhoPage() {
   const { isInitialized } = useAuth();
@@ -20,6 +22,13 @@ export default function CarrinhoPage() {
   
   const [selectAll, setSelectAll] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
+
+  // Estados para cálculo de frete
+  const [cep, setCep] = useState('');
+  const [calculandoFrete, setCalculandoFrete] = useState(false);
+  const [resultadoFrete, setResultadoFrete] = useState<ResultadoFrete | null>(null);
+  const [erroFrete, setErroFrete] = useState<string | null>(null);
+  const [freteEscolhido, setFreteEscolhido] = useState<string | null>(null);
 
   // Mostrar loading enquanto não inicializou ou está carregando
   if (!isInitialized || loading) {
@@ -189,6 +198,68 @@ export default function CarrinhoPage() {
       const preco = parseFloat(item.livro.preco.replace(',', '.'));
       return total + (preco * item.quantidade);
     }, 0);
+  };
+
+  // Formata o CEP com máscara
+  const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 8) value = value.slice(0, 8);
+    if (value.length > 5) {
+      value = value.slice(0, 5) + '-' + value.slice(5);
+    }
+    setCep(value);
+    // Limpar resultado anterior quando mudar o CEP
+    if (resultadoFrete) {
+      setResultadoFrete(null);
+      setErroFrete(null);
+      setFreteEscolhido(null);
+    }
+  };
+
+  // Calcula o frete do carrinho
+  const handleCalcularFrete = async () => {
+    const cepLimpo = cep.replace(/\D/g, '');
+    
+    if (!freteApi.validarCep(cepLimpo)) {
+      setErroFrete('Digite um CEP válido com 8 dígitos');
+      return;
+    }
+
+    try {
+      setCalculandoFrete(true);
+      setErroFrete(null);
+      
+      const resultado = await freteApi.calcularFreteCarrinho({
+        cep_destino: cepLimpo,
+      });
+      
+      setResultadoFrete(resultado);
+      // Selecionar automaticamente o frete padrão se disponível
+      const fretePadrao = resultado.opcoes.find(o => o.tipo === 'padrao');
+      if (fretePadrao) {
+        setFreteEscolhido(fretePadrao.tipo);
+      } else if (resultado.opcoes.length > 0) {
+        setFreteEscolhido(resultado.opcoes[0].tipo);
+      }
+    } catch (err) {
+      console.error('Erro ao calcular frete:', err);
+      setErroFrete(err instanceof Error ? err.message : 'Erro ao calcular frete');
+      setResultadoFrete(null);
+    } finally {
+      setCalculandoFrete(false);
+    }
+  };
+
+  // Obtém o valor do frete escolhido
+  const getFreteEscolhidoValor = () => {
+    if (!resultadoFrete || !freteEscolhido) return 0;
+    const opcao = resultadoFrete.opcoes.find(o => o.tipo === freteEscolhido);
+    return opcao ? (opcao.gratis ? 0 : opcao.preco) : 0;
+  };
+
+  // Total com frete
+  const getTotalComFrete = () => {
+    return getTotalPrice() + getFreteEscolhidoValor();
   };
 
   if (loading) {
@@ -361,11 +432,126 @@ export default function CarrinhoPage() {
                 </button>
               </div>
 
+              {/* Seção de Frete */}
+              <div className="mt-8 bg-white rounded-lg shadow-sm border p-6">
+                <h3 className="text-xl font-medium mb-4 flex items-center gap-2">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="1" y="3" width="15" height="13"/>
+                    <polygon points="16,6 20,6 23,11 23,18 20,18 20,15 16,15"/>
+                    <circle cx="5.5" cy="18.5" r="2.5"/>
+                    <circle cx="18.5" cy="18.5" r="2.5"/>
+                  </svg>
+                  Calcular Frete
+                </h3>
+
+                {/* Campo CEP */}
+                <div className="flex gap-4 items-start mb-4">
+                  <div className="flex-1 max-w-xs">
+                    <input
+                      type="text"
+                      value={cep}
+                      onChange={handleCepChange}
+                      placeholder="Digite o seu CEP"
+                      maxLength={9}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#FFD147] focus:border-transparent"
+                      onKeyDown={(e) => e.key === 'Enter' && handleCalcularFrete()}
+                    />
+                    {erroFrete && (
+                      <p className="text-sm text-red-500 mt-1">{erroFrete}</p>
+                    )}
+                  </div>
+                  <button 
+                    onClick={handleCalcularFrete}
+                    disabled={calculandoFrete || !cep}
+                    className={`flex items-center gap-2 rounded-lg px-6 py-3 transition-colors font-medium ${
+                      calculandoFrete || !cep
+                        ? 'bg-gray-400 cursor-not-allowed text-gray-200'
+                        : 'bg-[#3B362B] hover:bg-[#2a241f] text-white'
+                    }`}
+                  >
+                    {calculandoFrete ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Calculando...
+                      </>
+                    ) : (
+                      'Calcular'
+                    )}
+                  </button>
+                </div>
+
+                {/* Resultado do Frete */}
+                {resultadoFrete && (
+                  <div className="mt-4">
+                    <p className="text-sm text-gray-600 mb-3">
+                      Entrega para: <span className="font-medium">{freteApi.formatarCep(resultadoFrete.cep_destino)}</span> - {resultadoFrete.regiao}
+                    </p>
+                    
+                    <div className="space-y-3">
+                      {resultadoFrete.opcoes.map((opcao) => {
+                        const isSelected = freteEscolhido === opcao.tipo;
+                        const corBorda = opcao.tipo === 'expresso' ? '#FFB800' : opcao.tipo === 'padrao' ? '#5391AB' : '#3B362B';
+                        
+                        return (
+                          <label 
+                            key={opcao.tipo}
+                            className={`flex items-center justify-between p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                              isSelected ? 'bg-gray-50' : 'hover:bg-gray-50'
+                            }`}
+                            style={{ borderColor: isSelected ? corBorda : '#e5e7eb' }}
+                          >
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="radio"
+                                name="frete"
+                                value={opcao.tipo}
+                                checked={isSelected}
+                                onChange={() => setFreteEscolhido(opcao.tipo)}
+                                className="w-4 h-4 accent-[#3B362B]"
+                              />
+                              <div>
+                                <p className="font-medium" style={{ color: corBorda }}>
+                                  {opcao.nome}
+                                </p>
+                                <p className="text-sm text-gray-600">{opcao.prazo_texto}</p>
+                              </div>
+                            </div>
+                            <span 
+                              className="text-white text-sm px-3 py-1 rounded font-medium"
+                              style={{ backgroundColor: corBorda }}
+                            >
+                              {opcao.gratis ? 'GRÁTIS' : opcao.preco_formatado}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Total */}
-              <div className="text-right mt-4">
-                <p className="text-xl font-medium">
-                  Total: R$ {getTotalPrice().toFixed(2).replace('.', ',')}
-                </p>
+              <div className="text-right mt-6 bg-white rounded-lg shadow-sm border p-6">
+                <div className="space-y-2">
+                  <p className="text-lg text-gray-600">
+                    Subtotal: <span className="font-medium">R$ {getTotalPrice().toFixed(2).replace('.', ',')}</span>
+                  </p>
+                  {resultadoFrete && freteEscolhido && (
+                    <p className="text-lg text-gray-600">
+                      Frete: <span className="font-medium">
+                        {getFreteEscolhidoValor() === 0 
+                          ? <span className="text-green-600">Grátis</span>
+                          : `R$ ${getFreteEscolhidoValor().toFixed(2).replace('.', ',')}`
+                        }
+                      </span>
+                    </p>
+                  )}
+                  <div className="border-t pt-2 mt-2">
+                    <p className="text-2xl font-bold">
+                      Total: R$ {(resultadoFrete && freteEscolhido ? getTotalComFrete() : getTotalPrice()).toFixed(2).replace('.', ',')}
+                    </p>
+                  </div>
+                </div>
               </div>
             </>
           )}
