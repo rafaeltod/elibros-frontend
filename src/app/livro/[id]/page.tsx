@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
-import { Header, Footer, BooksCarousel } from '@/components';
-import { livroApi, avaliacaoApi, freteApi } from '@/services';
+import { Header, Footer, BooksCarousel, EnderecoModal } from '@/components';
+import { livroApi, avaliacaoApi, freteApi, clienteApi } from '@/services';
 import { Livro, Avaliacao, ResultadoFrete } from '@/types';
 import { useCart } from '../../../contexts/CartContext';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -30,6 +30,20 @@ export default function LivroPage() {
   const [calculandoFrete, setCalculandoFrete] = useState(false);
   const [resultadoFrete, setResultadoFrete] = useState<ResultadoFrete | null>(null);
   const [erroFrete, setErroFrete] = useState<string | null>(null);
+
+  // Estados para modal de endereço
+  const [modalEnderecoAberto, setModalEnderecoAberto] = useState(false);
+  const [enderecoUsuario, setEnderecoUsuario] = useState<{
+    id?: number;
+    cep: string;
+    rua: string;
+    numero: string;
+    complemento?: string;
+    bairro: string;
+    cidade: string;
+    uf: string;
+  } | null>(null);
+  const [carregandoEndereco, setCarregandoEndereco] = useState(false);
 
   const livroId = typeof params.id === 'string' ? parseInt(params.id, 10) : null;
 
@@ -133,6 +147,60 @@ export default function LivroPage() {
 
     fetchLivro();
   }, [livroId, carregarAvaliacoes]);
+
+  // Carregar endereço do usuário quando autenticado
+  useEffect(() => {
+    const carregarEndereco = async () => {
+      if (!isAuthenticated) {
+        setEnderecoUsuario(null);
+        return;
+      }
+
+      try {
+        setCarregandoEndereco(true);
+        const perfil = await clienteApi.getPerfil();
+        if (perfil.endereco) {
+          setEnderecoUsuario(perfil.endereco);
+          // Preencher o CEP automaticamente se o usuário tiver endereço
+          if (perfil.endereco.cep) {
+            const cepFormatado = freteApi.formatarCep(perfil.endereco.cep);
+            setCep(cepFormatado);
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao carregar endereço:', err);
+      } finally {
+        setCarregandoEndereco(false);
+      }
+    };
+
+    carregarEndereco();
+  }, [isAuthenticated]);
+
+  // Salvar endereço do usuário
+  const handleSalvarEndereco = async (endereco: {
+    id?: number;
+    cep: string;
+    rua: string;
+    numero: string;
+    complemento?: string;
+    bairro: string;
+    cidade: string;
+    uf: string;
+  }) => {
+    try {
+      await clienteApi.updatePerfil({
+        endereco: endereco
+      });
+      setEnderecoUsuario(endereco);
+      // Preencher o CEP e calcular frete automaticamente
+      const cepFormatado = freteApi.formatarCep(endereco.cep);
+      setCep(cepFormatado);
+    } catch (err) {
+      console.error('Erro ao salvar endereço:', err);
+      throw err;
+    }
+  };
 
   const formatPreco = (preco: string) => {
     const [reais, centavos] = preco.split('.');
@@ -402,14 +470,40 @@ export default function LivroPage() {
 
               {/* Local de entrega */}
               <div className="mb-4">
-                <p className="text-sm flex items-center mb-2">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="mr-2">
+                <div className="text-sm flex items-center mb-2">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="mr-2 flex-shrink-0">
                     <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22S19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="#5391AB"/>
                   </svg>
-                  <a href="#" className="text-[#5391AB] hover:underline text-sm">
-                    Entregando em ENDEREÇO. Atualizar local
-                  </a>
-                </p>
+                  {carregandoEndereco ? (
+                    <span className="text-gray-500 text-sm">Carregando endereço...</span>
+                  ) : enderecoUsuario ? (
+                    <span className="text-sm">
+                      <span className="text-gray-600">Entregando em </span>
+                      <span className="font-medium">{enderecoUsuario.rua}, {enderecoUsuario.numero}</span>
+                      <span className="text-gray-600"> - {enderecoUsuario.cidade}/{enderecoUsuario.uf}</span>
+                      <button 
+                        onClick={() => setModalEnderecoAberto(true)}
+                        className="text-[#5391AB] hover:underline ml-2"
+                      >
+                        Atualizar
+                      </button>
+                    </span>
+                  ) : (
+                    <button 
+                      onClick={() => {
+                        if (!isAuthenticated) {
+                          alert('Faça login para cadastrar seu endereço');
+                          router.push('/login');
+                          return;
+                        }
+                        setModalEnderecoAberto(true);
+                      }}
+                      className="text-[#5391AB] hover:underline text-sm"
+                    >
+                      {isAuthenticated ? 'Cadastrar endereço de entrega' : 'Faça login para cadastrar endereço'}
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Estoque */}
@@ -676,6 +770,15 @@ export default function LivroPage() {
       </main>
 
       <Footer />
+
+      {/* Modal de Endereço */}
+      <EnderecoModal
+        isOpen={modalEnderecoAberto}
+        onClose={() => setModalEnderecoAberto(false)}
+        onSave={handleSalvarEndereco}
+        enderecoAtual={enderecoUsuario}
+        title={enderecoUsuario ? "Atualizar Endereço" : "Cadastrar Endereço"}
+      />
     </div>
   );
 }

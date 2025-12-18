@@ -4,3 +4,4 @@ export { default as Footer } from './Footer';
 export { default as BooksCarousel } from './BooksCarousel';
 export { default as ClientOnly } from './ClientOnly';
 export { default as ProtectedRoute } from './ProtectedRoute';
+export { default as EnderecoModal } from './EnderecoModal';
