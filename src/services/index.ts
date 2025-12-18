@@ -6,3 +6,4 @@ export { cupomApi } from './cupomApiService';
 export { elibrosApi } from './api';
 export { freteApi } from './freteApiService';
 export { livroApi } from './livroApiService';
+export { pedidoApi } from './pedidoApiService';
