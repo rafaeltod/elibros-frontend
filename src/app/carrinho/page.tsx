@@ -9,8 +9,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { getImageProps } from '../../utils/imageUtils';
 import { freteApi } from '../../services';
 import { ResultadoFrete } from '../../types';
+import { useRouter } from 'next/navigation';
 
 export default function CarrinhoPage() {
+  const router = useRouter();
   const { isInitialized } = useAuth();
   const { 
     items: cartItems, 
@@ -430,7 +432,11 @@ export default function CarrinhoPage() {
                 >
                   Continuar comprando
                 </Link>
-                <button className="px-6 py-3 bg-[#FFD147] hover:bg-[#fac423] rounded text-lg transition-colors">
+                <button
+                  className="px-6 py-3 bg-[#FFD147] hover:bg-[#fac423] rounded text-lg transition-colors"
+                  type="button"
+                  onClick={() => router.push('/confirmar')}
+                >
                   Finalizar compra
                 </button>
               </div>
