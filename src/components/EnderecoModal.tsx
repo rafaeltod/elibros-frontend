@@ -69,7 +69,7 @@ export default function EnderecoModal({
         id: enderecoAtual.id,
         cep: enderecoAtual.cep || '',
         rua: enderecoAtual.rua || '',
-        numero: enderecoAtual.numero || '',
+        numero: String(enderecoAtual.numero || ''),
         complemento: enderecoAtual.complemento || '',
         bairro: enderecoAtual.bairro || '',
         cidade: enderecoAtual.cidade || '',
@@ -161,10 +161,6 @@ export default function EnderecoModal({
       setErro('Rua é obrigatória');
       return;
     }
-    if (!endereco.numero.trim()) {
-      setErro('Número é obrigatório');
-      return;
-    }
     if (!endereco.bairro.trim()) {
       setErro('Bairro é obrigatório');
       return;
@@ -180,8 +176,15 @@ export default function EnderecoModal({
 
     try {
       setSalvando(true);
+      let numeroCorrigido: number;
+      if (!endereco.numero || isNaN(Number(endereco.numero))) {
+        numeroCorrigido = 0;
+      } else {
+        numeroCorrigido = Number(endereco.numero);
+      }
       await onSave({
         ...endereco,
+        numero: String(numeroCorrigido),
         cep: endereco.cep.replace(/\D/g, ''), // Enviar CEP sem máscara
       });
       onClose();
@@ -285,14 +288,14 @@ export default function EnderecoModal({
           <div className="flex gap-4">
             <div className="w-1/3">
               <label htmlFor="numero" className="block text-sm font-medium text-[#3B362B] mb-1">
-                Número <span className="text-red-500">*</span>
+                Número
               </label>
               <input
                 id="numero"
                 type="text"
                 value={endereco.numero}
                 onChange={(e) => setEndereco(prev => ({ ...prev, numero: e.target.value }))}
-                placeholder="123"
+                placeholder="S/N"
                 className="w-full border border-[#D9D9D9] rounded-lg px-4 py-3 text-[#1C1607] bg-white focus:outline-none focus:ring-2 focus:ring-[#FFD147] focus:border-transparent"
               />
             </div>
